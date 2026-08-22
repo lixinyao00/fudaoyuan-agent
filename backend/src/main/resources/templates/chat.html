@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>辅导员AI问答助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; height: 100vh; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, #1a73e8, #4285f4); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .header h1 { font-size: 20px; font-weight: 600; }
+        .header .subtitle { font-size: 13px; opacity: 0.85; }
+        .chat-container { flex: 1; overflow-y: auto; padding: 20px; max-width: 800px; width: 100%; margin: 0 auto; }
+        .message { margin-bottom: 16px; display: flex; gap: 10px; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message.user { flex-direction: row-reverse; }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .message.user .avatar { background: #e3f2fd; }
+        .message.assistant .avatar { background: #e8f5e9; }
+        .bubble { max-width: 70%; padding: 12px 16px; border-radius: 16px; line-height: 1.6; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+        .message.user .bubble { background: #1a73e8; color: white; border-bottom-right-radius: 4px; }
+        .message.assistant .bubble { background: white; color: #333; border: 1px solid #e8e8e8; border-bottom-left-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .citations { margin-top: 8px; padding: 8px 12px; background: #f8f9fa; border-radius: 8px; font-size: 12px; }
+        .citations summary { cursor: pointer; color: #1a73e8; font-weight: 500; }
+        .citation-item { margin-top: 6px; padding: 6px 8px; background: white; border-radius: 4px; border-left: 3px solid #1a73e8; }
+        .citation-meta { color: #666; font-size: 11px; }
+        .risk-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-top: 4px; }
+        .risk-NONE { display: none; }
+        .risk-LOW { background: #fff3e0; color: #e65100; }
+        .risk-MEDIUM { background: #fff3e0; color: #e65100; }
+        .risk-HIGH { background: #fce4ec; color: #c62828; }
+        .risk-CRITICAL { background: #fce4ec; color: #c62828; font-weight: bold; }
+        .feedback-bar { display: flex; gap: 8px; margin-top: 6px; }
+        .feedback-btn { background: none; border: 1px solid #ddd; border-radius: 12px; padding: 2px 10px; font-size: 11px; cursor: pointer; color: #666; }
+        .feedback-btn:hover { border-color: #1a73e8; color: #1a73e8; }
+        .input-area { padding: 16px 24px; background: white; border-top: 1px solid #e8e8e8; }
+        .input-wrapper { max-width: 800px; margin: 0 auto; display: flex; gap: 10px; }
+        .input-wrapper textarea { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 12px; resize: none; font-size: 14px; font-family: inherit; outline: none; min-height: 44px; max-height: 120px; }
+        .input-wrapper textarea:focus { border-color: #1a73e8; }
+        .input-wrapper button { padding: 10px 24px; background: #1a73e8; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .input-wrapper button:hover { background: #1557b0; }
+        .input-wrapper button:disabled { background: #ccc; cursor: not-allowed; }
+        .quick-actions { max-width: 800px; margin: 0 auto 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .quick-btn { background: white; border: 1px solid #e0e0e0; border-radius: 16px; padding: 6px 14px; font-size: 13px; cursor: pointer; color: #555; }
+        .quick-btn:hover { border-color: #1a73e8; color: #1a73e8; background: #e8f0fe; }
+        .welcome { text-align: center; padding: 40px 20px; color: #666; }
+        .welcome h2 { color: #333; margin-bottom: 8px; }
+        .welcome p { font-size: 14px; line-height: 1.8; }
+        .loading { display: none; text-align: center; padding: 10px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>辅导员AI问答助手</h1>
+            <div class="subtitle">基于《2025年学生手册》为您解答政策问题</div>
+        </div>
+    </div>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="welcome" id="welcome">
+            <h2>欢迎使用辅导员AI问答助手</h2>
+            <p>我可以帮您解答关于学校政策和日常事务的问题。<br>请在下方输入您的问题，或点击快捷问题开始。</p>
+        </div>
+        <div class="loading" id="loading">正在思考中...</div>
+    </div>
+
+    <div class="input-area">
+        <div class="quick-actions" id="quickActions">
+            <button class="quick-btn" onclick="askQuick(this)">奖学金怎么申请？</button>
+            <button class="quick-btn" onclick="askQuick(this)">请假需要什么手续？</button>
+            <button class="quick-btn" onclick="askQuick(this)">宿舍管理有哪些规定？</button>
+            <button class="quick-btn" onclick="askQuick(this)">选课和学分要求是什么？</button>
+            <button class="quick-btn" onclick="askQuick(this)">学位授予条件是什么？</button>
+            <button class="quick-btn" onclick="askQuick(this)">考试违纪怎么处理？</button>
+        </div>
+        <div class="input-wrapper">
+            <textarea id="messageInput" placeholder="请输入您的问题..." rows="1"
+                      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+            <button id="sendBtn" onclick="sendMessage()">发送</button>
+        </div>
+    </div>
+
+    <script>
+        let conversationId = null;
+        const container = document.getElementById('chatContainer');
+        const input = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const loading = document.getElementById('loading');
+        const welcome = document.getElementById('welcome');
+        const quickActions = document.getElementById('quickActions');
+
+        function askQuick(btn) {
+            input.value = btn.textContent;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            welcome.style.display = 'none';
+            quickActions.style.display = 'none';
+            input.value = '';
+            input.style.height = 'auto';
+            addMessage('user', msg);
+            loading.style.display = 'block';
+            sendBtn.disabled = true;
+
+            try {
+                const resp = await fetch('/api/v1/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({conversation_id: conversationId, message: msg, channel: 'web'})
+                });
+                const data = await resp.json();
+                conversationId = data.conversation_id;
+                loading.style.display = 'none';
+                addAssistantMessage(data);
+            } catch (e) {
+                loading.style.display = 'none';
+                addMessage('assistant', '抱歉，网络错误，请稍后重试。');
+            }
+            sendBtn.disabled = false;
+            input.focus();
+        }
+
+        function addMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = 'message ' + role;
+            const avatar = role === 'user' ? '👤' : '🤖';
+            div.innerHTML = '<div class="avatar">' + avatar + '</div><div class="bubble">' + escapeHtml(text) + '</div>';
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addAssistantMessage(data) {
+            const div = document.createElement('div');
+            div.className = 'message assistant';
+            let html = '<div class="avatar">🤖</div><div class="bubble">';
+            html += escapeHtml(data.answer);
+
+            if (data.risk_level && data.risk_level !== 'NONE') {
+                html += '<br><span class="risk-badge risk-' + data.risk_level + '">风险等级: ' + data.risk_level + '</span>';
+            }
+
+            if (data.citations && data.citations.length > 0) {
+                html += '<details class="citations"><summary>📖 依据来源 (' + data.citations.length + '条)</summary>';
+                data.citations.forEach(c => {
+                    html += '<div class="citation-item">';
+                    html += '<div><strong>' + escapeHtml(c.chapter_title || '') + '</strong></div>';
+                    html += '<div class="citation-meta">页码: ' + c.page_start + '-' + c.page_end;
+                    if (c.article_ref) html += ' | 条款: ' + escapeHtml(c.article_ref);
+                    html += ' | 相关度: ' + (c.score * 100).toFixed(0) + '%</div>';
+                    html += '<div style="margin-top:4px;font-size:12px;color:#555;">' + escapeHtml(c.content_snippet || '') + '</div>';
+                    html += '</div>';
+                });
+                html += '</details>';
+            }
+
+            if (data.needs_human_review) {
+                html += '<br><span style="color:#c62828;font-size:12px;">⚠ 此问题建议联系辅导员或相关部门获取进一步帮助</span>';
+            }
+
+            html += '<div class="feedback-bar">';
+            html += '<button class="feedback-btn" onclick="sendFeedback(\'' + data.request_id + '\',\'HELPFUL\',this)">有帮助</button>';
+            html += '<button class="feedback-btn" onclick="sendFeedback(\'' + data.request_id + '\',\'NOT_HELPFUL\',this)">无帮助</button>';
+            html += '<button class="feedback-btn" onclick="sendFeedback(\'' + data.request_id + '\',\'REPORT\',this)">举报</button>';
+            html += '</div></div>';
+            div.innerHTML = html;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendFeedback(messageId, type, btn) {
+            try {
+                await fetch('/api/v1/feedback', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message_id: messageId, feedback_type: type})
+                });
+                btn.textContent = '✓ 已反馈';
+                btn.disabled = true;
+            } catch (e) {}
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        input.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+    </script>
+</body>
+</html>

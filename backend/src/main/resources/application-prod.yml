@@ -1,0 +1,49 @@
+# MySQL + MiMo 生产配置
+# 使用方式: mvn spring-boot:run -Dspring.profiles.active=prod
+#
+# 必须设置以下环境变量:
+#   ADMIN_PASSWORD - 管理员密码（禁止使用默认密码）
+#   SPRING_DATASOURCE_USERNAME - 数据库用户名
+#   SPRING_DATASOURCE_PASSWORD - 数据库密码
+#   AI_PROVIDER - AI提供者 (mimo)
+#   MIMO_API_KEY - MiMo API密钥
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/daoyuan?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${SPRING_DATASOURCE_USERNAME:daoyuan}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  h2:
+    console:
+      enabled: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/migration/V001__init_schema.sql
+      continue-on-error: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: auto
+      table-prefix: ""
+
+# 生产环境必须设置管理员密码
+admin:
+  username: ${ADMIN_USERNAME:admin}
+  password: ${ADMIN_PASSWORD:}
+
+# 生产环境 AI 配置
+ai:
+  provider: ${AI_PROVIDER:mimo}
+
+# 日志脱敏
+logging:
+  level:
+    com.example.daoyuanagent: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

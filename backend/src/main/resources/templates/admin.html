@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 辅导员AI问答助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f6fa; }
+        .header { background: #1a73e8; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 18px; }
+        .header a { color: white; text-decoration: none; font-size: 14px; opacity: 0.85; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; background: white; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 14px; color: #666; }
+        .tab.active { background: #1a73e8; color: white; }
+        .panel { display: none; background: white; border-radius: 0 8px 8px 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .panel.active { display: block; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; font-weight: 600; color: #555; }
+        .status-PENDING { color: #e65100; font-weight: 600; }
+        .status-APPROVED { color: #2e7d32; font-weight: 600; }
+        .status-REJECTED { color: #c62828; font-weight: 600; }
+        .btn { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 4px; }
+        .btn-approve { background: #e8f5e9; color: #2e7d32; }
+        .btn-reject { background: #fce4ec; color: #c62828; }
+        .btn:hover { opacity: 0.8; }
+        .ingest-form { margin-bottom: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px; }
+        .ingest-form input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 400px; }
+        .ingest-form button { padding: 8px 16px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .message { padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; }
+        .message.success { background: #e8f5e9; color: #2e7d32; }
+        .message.error { background: #fce4ec; color: #c62828; }
+        .content-preview { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>辅导员AI问答助手 - 管理后台</h1>
+        <div><a href="/chat">问答页面</a> | <a href="#" onclick="logout()">退出</a></div>
+    </div>
+    <div class="container">
+        <div th:if="${message}" class="message success" th:text="${message}"></div>
+        <div th:if="${error}" class="message error" th:text="${error}"></div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('chunks')">知识条目</button>
+            <button class="tab" onclick="switchTab('ingest')">导入PDF</button>
+            <button class="tab" onclick="switchTab('feedback')">用户反馈</button>
+            <button class="tab" onclick="switchTab('audit')">审计日志</button>
+        </div>
+
+        <div id="tab-chunks" class="panel active">
+            <h3 style="margin-bottom:12px;">知识条目管理</h3>
+            <p style="margin-bottom:12px;font-size:13px;color:#666;">共 <span th:text="${chunks != null ? chunks.size() : 0}">0</span> 条</p>
+            <table>
+                <thead><tr><th>ID</th><th>章节</th><th>页码</th><th>板块</th><th>内容预览</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody>
+                    <tr th:each="chunk : ${chunks}">
+                        <td th:text="${chunk.id}"></td>
+                        <td th:text="${chunk.chapterTitle}"></td>
+                        <td th:text="${chunk.pageStart + '-' + chunk.pageEnd}"></td>
+                        <td th:text="${chunk.categories}"></td>
+                        <td class="content-preview" th:text="${#strings.abbreviate(chunk.content, 60)}"></td>
+                        <td><span th:class="'status-' + ${chunk.reviewStatus}" th:text="${chunk.reviewStatus}"></span></td>
+                        <td>
+                            <form th:if="${chunk.reviewStatus.name() == 'PENDING'}" style="display:inline;" th:action="'/admin/chunks/' + ${chunk.id} + '/approve'" method="post">
+                                <button class="btn btn-approve" type="submit">通过</button>
+                            </form>
+                            <form th:if="${chunk.reviewStatus.name() == 'PENDING'}" style="display:inline;" th:action="'/admin/chunks/' + ${chunk.id} + '/reject'" method="post">
+                                <button class="btn btn-reject" type="submit">拒绝</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="tab-ingest" class="panel">
+            <h3 style="margin-bottom:12px;">导入PDF</h3>
+            <div class="ingest-form">
+                <form action="/admin/ingest" method="post">
+                    <label>PDF文件路径: <input type="text" name="pdfPath" placeholder="例如: ./学生手册(1)-1.pdf" required></label>
+                    <button type="submit">开始导入</button>
+                </form>
+            </div>
+            <p style="font-size:13px;color:#666;">导入后所有知识条目默认为PENDING状态，需要管理员审核后才能参与正式回答。</p>
+        </div>
+
+        <div id="tab-feedback" class="panel">
+            <h3 style="margin-bottom:12px;">用户反馈</h3>
+            <table>
+                <thead><tr><th>消息ID</th><th>类型</th><th>原因</th><th>时间</th></tr></thead>
+                <tbody>
+                    <tr th:each="fb : ${feedbacks}">
+                        <td th:text="${fb.messageId}"></td>
+                        <td th:text="${fb.feedbackType}"></td>
+                        <td th:text="${fb.reason}"></td>
+                        <td th:text="${fb.createdAt}"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p th:if="${feedbacks == null || feedbacks.isEmpty()}" style="color:#999;">暂无反馈</p>
+        </div>
+
+        <div id="tab-audit" class="panel">
+            <h3 style="margin-bottom:12px;">审计日志</h3>
+            <table>
+                <thead><tr><th>操作</th><th>操作人</th><th>目标</th><th>详情</th><th>时间</th></tr></thead>
+                <tbody>
+                    <tr th:each="log : ${risks}">
+                        <td th:text="${log.action}"></td>
+                        <td th:text="${log.operator}"></td>
+                        <td th:text="${log.targetType + ':' + log.targetId}"></td>
+                        <td th:text="${log.details}"></td>
+                        <td th:text="${log.createdAt}"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p th:if="${risks == null || risks.isEmpty()}" style="color:#999;">暂无日志</p>
+        </div>
+    </div>
+    <script>
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + name).classList.add('active');
+        }
+        async function logout() {
+            await fetch('/api/v1/admin/logout', {method:'POST'});
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录 - 辅导员AI问答助手</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .login-card { background: white; border-radius: 12px; padding: 40px; width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .login-card h2 { text-align: center; color: #1a73e8; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 14px; color: #555; }
+        .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+        .form-group input:focus { border-color: #1a73e8; }
+        .login-btn { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .login-btn:hover { background: #1557b0; }
+        .error { color: #c62828; font-size: 13px; text-align: center; margin-bottom: 10px; }
+        .back-link { text-align: center; margin-top: 16px; }
+        .back-link a { color: #1a73e8; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>管理员登录</h2>
+        <div class="error" id="error"></div>
+        <form onsubmit="return doLogin(event)">
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" id="username" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="login-btn">登录</button>
+        </form>
+        <div class="back-link"><a href="/chat">← 返回问答页面</a></div>
+    </div>
+    <script>
+        async function doLogin(e) {
+            e.preventDefault();
+            const resp = await fetch('/api/v1/admin/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: document.getElementById('username').value, password: document.getElementById('password').value})
+            });
+            if (resp.ok) { window.location.href = '/admin'; }
+            else { const data = await resp.json(); document.getElementById('error').textContent = data.message || '登录失败'; }
+            return false;
+        }
+    </script>
+</body>
+</html>

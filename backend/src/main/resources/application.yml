@@ -1,0 +1,107 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: daoyuan-agent
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/daoyuan;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_ON_EXIT=FALSE}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  sql:
+    init:
+      mode: ${SQL_INIT_MODE:always}
+      schema-locations: classpath:db/migration/V001__init_schema.sql
+      continue-on-error: true
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+  thymeleaf:
+    cache: false
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+# AI Provider Configuration
+ai:
+  provider: ${AI_PROVIDER:mock}  # mock or mimo
+
+# MiMo API Configuration
+mimo:
+  api-base-url: ${MIMO_API_BASE_URL:https://api.xiaomimimo.com/v1}
+  api-key: ${MIMO_API_KEY:}
+  model: ${MIMO_MODEL:mimo-v2.5}
+  timeout: ${MIMO_TIMEOUT:30}
+  max-tokens: ${MIMO_MAX_TOKENS:1200}
+
+# RAG Configuration
+rag:
+  retrieval:
+    top-k: ${RAG_RETRIEVAL_TOP_K:8}
+  evidence:
+    top-n: ${RAG_EVIDENCE_TOP_N:5}
+  min-score: ${RAG_MIN_SCORE:0.15}
+  vector:
+    top-k: ${RAG_VECTOR_TOP_K:10}
+  chat:
+    memory:
+      size: ${RAG_CHAT_MEMORY_SIZE:10}
+    use:
+      vector:
+        search: ${RAG_USE_VECTOR_SEARCH:true}
+      hybrid:
+        search: ${RAG_USE_HYBRID_SEARCH:true}
+  sse:
+    timeout: ${RAG_SSE_TIMEOUT:30000}
+    async:
+      thread:
+        pool:
+          size: ${RAG_SSE_THREAD_POOL_SIZE:10}
+
+# Milvus Configuration
+milvus:
+  host: ${MILVUS_HOST:localhost}
+  port: ${MILVUS_PORT:19530}
+  collection:
+    name: ${MILVUS_COLLECTION_NAME:student_handbook}
+
+# DashScope API Configuration (for embedding and chat)
+dashscope:
+  api-key: ${DASHSCOPE_API_KEY:}
+  base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+  embedding-model: ${DASHSCOPE_EMBEDDING_MODEL:text-embedding-v4}
+
+# Admin Configuration
+# 生产环境必须通过 ADMIN_PASSWORD 环境变量设置安全密码
+admin:
+  username: ${ADMIN_USERNAME:admin}
+  password: ${ADMIN_PASSWORD:}
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    com.example.daoyuanagent: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
