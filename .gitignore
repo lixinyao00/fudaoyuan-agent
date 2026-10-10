@@ -1,0 +1,26 @@
+# Git portable tools
+git-portable/
+portablegit.7z.exe
+
+# IDE
+.idea/
+*.iml
+
+# Build artifacts
+target/
+node_modules/
+dist/
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large files (optional)
+*.pdf
