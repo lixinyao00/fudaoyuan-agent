@@ -1,143 +1,136 @@
-# 辅导员 AI 问答助手
+# 辅导员智能问答系统
 
-基于《学生手册》等资料的 RAG（检索增强生成）问答系统，包含 Spring Boot 后端和 Vue 3 前端。
+给辅导员和学生用的问答机器人，基于《学生手册》做的检索增强生成（RAG）。后端是 Spring Boot，前端用的 Vue 3。
 
-本目录是源码发行版，不包含任何生产凭据、数据库数据、Milvus 数据、上传文件、知识库 PDF、编译产物或依赖缓存。
+## 用到的技术
 
-## 技术栈
+后端：
+- Java 17 + Spring Boot 3.2.5
+- MyBatis-Plus 3.5.5 做数据访问
+- MySQL 8.0 存业务数据
+- Milvus 做向量检索
+- PDFBox 解析 PDF 文档
+- OkHttp 调用大模型 API
 
-- Java 17
-- Spring Boot 3.2.5
-- MyBatis-Plus 3.5.5
-- MySQL 8.0
-- Milvus
-- Vue 3 + Vue Router 4 + Vite
-- DashScope Embedding、MiMo 或 DeepSeek 大模型接口
+前端：
+- Vue 3 + Vite
+- Vue Router 4
+- Pinia 状态管理
 
-## 目录结构
+大模型接口支持：
+- 阿里 DashScope 做文本向量化
+- 小米 MiMo / DeepSeek 做对话生成
 
-```text
-src/main/java/                 Spring Boot 后端源码
-src/main/resources/            后端配置和数据库 schema
-frontend/src/                  Vue 前端源码
-frontend/public/               前端公共资源
-frontend/package.json          前端依赖和脚本
-pom.xml                        Maven 构建配置
-docker-compose.yml             MySQL、Milvus 依赖服务模板
-.env.example                   环境变量模板
-start.sh                       本地启动脚本
-stop.sh                        停止后端脚本
+## 项目结构
+
+```
+backend/                    后端代码
+  src/main/java/            Java 源码
+  src/main/resources/       配置文件、数据库脚本
+  pom.xml                   Maven 依赖配置
+  start.sh                  启动脚本
+  stop.sh                   停止脚本
+
+frontend/                   前端代码
+  src/                      Vue 源码
+  public/                   静态资源
+  package.json              npm 依赖
+
+docker-compose.yml          依赖服务编排（MySQL、Milvus、MinIO、etcd）
+Dockerfile                  应用容器构建
+.env.example                环境变量示例
 ```
 
-## 环境要求
+## 环境准备
 
-- JDK 17+
+需要提前装好：
+- JDK 17 或更高版本
 - Maven 3.8+
 - Node.js 18+
-- npm
-- Docker 和 Docker Compose
-- MySQL 8.0
-- Milvus 及其依赖服务
+- Docker 和 Docker Compose（跑 MySQL、Milvus 用）
 
-## 配置环境变量
+## 配置
 
-复制环境变量模板：
+先把环境变量模板复制一份，然后填上自己的配置：
 
 ```bash
 cp .env.example .env
 ```
 
-然后填写自己的配置。不要提交 `.env`，也不要使用他人提供的密钥。
+主要配置项：
 
-主要变量如下：
-
-| 变量 | 用途 |
+| 变量名 | 说明 |
 | --- | --- |
-| `MYSQL_PASSWORD` | 应用连接 MySQL 的密码 |
-| `MYSQL_ROOT_PASSWORD` | MySQL root 密码 |
-| `APP_JWT_SECRET` | JWT 签名密钥，至少 32 字节 |
-| `APP_DEFAULT_ADMIN_PASSWORD` | 首次启动时创建的管理员密码 |
-| `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | Milvus 使用的 MinIO 凭据 |
-| `MIMO_API_KEY` | MiMo 模型接口密钥，可选 |
-| `DEEPSEEK_API_KEY` | DeepSeek 模型接口密钥，可选 |
-| `DASHSCOPE_API_KEY` | Embedding 接口密钥，可选 |
+| MYSQL_PASSWORD | 数据库密码 |
+| MYSQL_ROOT_PASSWORD | MySQL root 密码 |
+| APP_JWT_SECRET | JWT 签名密钥，至少 32 字节 |
+| APP_DEFAULT_ADMIN_PASSWORD | 管理员初始密码 |
+| MINIO_ACCESS_KEY / MINIO_SECRET_KEY | MinIO 存储密钥（Milvus 用） |
+| MIMO_API_KEY | MiMo 接口密钥（可选） |
+| DEEPSEEK_API_KEY | DeepSeek 接口密钥（可选） |
+| DASHSCOPE_API_KEY | 向量化接口密钥（可选） |
 
-没有配置 Embedding 或向量服务时，系统会使用关键词检索；不要在代码中填入假密钥或真实生产凭据。
+如果没有配置向量服务，系统会自动降级到关键词检索，也能用。
 
-## 启动依赖服务
+## 启动
+
+### 先启动依赖服务
 
 ```bash
 docker compose --env-file .env up -d mysql etcd minio standalone
 ```
 
-如果只使用外部 MySQL 或 Milvus，可以根据实际部署情况调整 `docker-compose.yml`。Compose 文件中的密码均通过环境变量读取。
-
-## 构建和启动
-
-### 方式一：使用启动脚本
-
-首次启动或需要重新构建时：
+### 方式一：用脚本一键启动
 
 ```bash
 chmod +x start.sh stop.sh
 ./start.sh --rebuild --web
 ```
 
-常用参数：
+参数说明：
+- `--rebuild` 重新构建后端
+- `--web` 重新构建前端
+- `--port 8081` 换个端口启动
 
-- `--rebuild`：重新构建后端 JAR
-- `--web`：安装前端依赖并重新构建前端
-- `--port 8081`：使用其他端口启动后端
-
-启动后访问：
-
-- 前端：http://localhost:8080
+启动后：
+- 前端地址：http://localhost:8080
 - 健康检查：http://localhost:8080/api/health
 
 停止服务：
-
 ```bash
 ./stop.sh
 ```
 
-### 方式二：分别启动前后端
+### 方式二：手动分别启动
 
-构建后端：
-
+后端：
 ```bash
 mvn clean package -DskipTests
 java -jar target/my-rag-agent-1.0.0.jar
 ```
 
-启动前端开发服务器：
-
+前端开发模式：
 ```bash
 cd frontend
 npm ci
 npm run dev
 ```
 
-Vite 开发服务器默认运行在 http://localhost:5173，并将 `/api` 请求代理到后端 8080 端口。
+前端开发服务器默认在 http://localhost:5173，会把 `/api` 请求代理到后端 8080 端口。
 
 ## 知识库
 
-源码发行版默认关闭内置知识库导入，因为没有携带原始 PDF 文件。配置位于：
+默认没有开启启动时自动导入知识库，因为源码里没带 PDF 文件。
 
-```text
-src/main/resources/application.yml
-```
+如果要用这个功能：
+1. 把 PDF 文件放到 `backend/src/main/resources/kb/` 目录
+2. 改 `application.yml` 里的 `rag.kb.enabled` 为 `true`
+3. 根据实际情况改 `rag.kb.title` 和 `rag.kb.resource`
 
-如果需要使用启动时自动导入功能：
+也可以在管理后台上传文档。
 
-1. 将经过授权的知识库 PDF 放入 `src/main/resources/kb/`。
-2. 修改 `rag.kb.enabled` 为 `true`。
-3. 根据文件名修改 `rag.kb.title` 和 `rag.kb.resource`。
+## 几点提醒
 
-也可以通过管理端上传文档，具体接口以当前后端实现为准。
-
-## 安全说明
-
-- `.env` 只保存在本地或受控部署环境，不要提交到代码仓库。
-- 生产环境必须替换 JWT 密钥、管理员密码、数据库密码和第三方 API Key。
-- 不要把 `volumes/`、`uploads/`、`app.log`、`target/` 或数据库备份打包给他人。
-- 对外分享源码前，应再次检查提交记录、压缩包和编辑器临时文件中是否包含凭据。
+- `.env` 文件不要提交到 git，里面都是敏感信息
+- 部署到生产环境记得改掉默认的 JWT 密钥、管理员密码这些
+- `volumes/`、`uploads/`、`app.log` 这些目录不要打包给别人

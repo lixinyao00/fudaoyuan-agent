@@ -31,7 +31,7 @@ public class ChatController {
     }
 
     /**
-     * RAG 问答接口（普通）
+     * 问答接口（普通）
      */
     @PostMapping
     public Map<String, Object> chat(@RequestBody Map<String, String> request, HttpServletRequest http) {
@@ -40,7 +40,7 @@ public class ChatController {
     }
 
     /**
-     * RAG 问答接口（流式 SSE）
+     * 问答接口（流式 SSE）
      */
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chatStream(@RequestBody Map<String, String> request, HttpServletRequest http) {

@@ -59,7 +59,7 @@ logging:
     com.study.ragagent: DEBUG
     org.springframework: INFO
 
-# AI 配置
+# 大模型接口配置
 ai:
   provider: mimo
   deepseek:

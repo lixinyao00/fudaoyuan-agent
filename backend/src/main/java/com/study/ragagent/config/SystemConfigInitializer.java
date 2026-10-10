@@ -32,14 +32,14 @@ public class SystemConfigInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         try {
             configService.ensureDefault("system.prompt",
-                    RagService.defaultSystemPrompt(), "PROMPT", "RAG 系统提示词");
+                    RagService.defaultSystemPrompt(), "PROMPT", "系统提示词");
             configService.ensureDefault("keyword.mappings",
                     toJson(ragService.getDefaultKeywordMappings()), "JSON", "关键词映射 [[触发词,检索词],...]");
             configService.ensureDefault("crisis.keywords",
                     String.join(",", RagService.defaultCrisisKeywords()), "STRING", "危机关键词，逗号分隔");
-            log.info("系统配置已初始化（缺失项写入默认值）");
+            log.info("系统配置初始化完成");
         } catch (Exception e) {
-            log.warn("系统配置初始化失败（不影响启动）: {}", e.getMessage());
+            log.warn("配置初始化失败: {}", e.getMessage());
         }
     }
 

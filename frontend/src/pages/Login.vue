@@ -3,7 +3,7 @@
     <div class="login-card">
       <div class="brand">
         <div class="brand-icon">🎓</div>
-        <h1>辅导员AI问答助手</h1>
+        <h1>辅导员问答系统</h1>
         <p>登录后继续使用</p>
       </div>
 

@@ -19,23 +19,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * RAG 服务
- * 负责检索增强生成
+ * 问答服务，负责检索知识库并调用大模型生成回答
  */
 @Service
 public class RagService {
 
-    // ===== 配置键（迁移到 system_config 表，库空/异常时用代码内默认值兜底）=====
+    // 配置项存在 system_config 表里，读不到就用下面的默认值
     private static final String CFG_SYSTEM_PROMPT = "system.prompt";
     private static final String CFG_KEYWORD_MAP = "keyword.mappings";
     private static final String CFG_CRISIS_KEYWORDS = "crisis.keywords";
 
-    /** 默认危机关键词，可在后台 crisis.keywords 配置项修改 */
+    /** 危机关键词列表，可以在后台配置里改 */
     private static final List<String> DEFAULT_CRISIS_KEYWORDS = List.of(
             "自杀", "跳楼", "自伤", "轻生", "想死", "不想活", "结束生命", "割腕", "上吊", "一了百了", "活不下去");
 
     private static final String SYSTEM_PROMPT = """
-            你是「辅导员AI问答助手」，专门依据《清华大学学生手册》等校内正式文件，
+            你是「辅导员问答助手」，专门依据《清华大学学生手册》等校内正式文件，
             帮助学生解答学籍、奖助、请假、宿舍、考试纪律、学位授予等事务性问题。
 
             【角色定位】
@@ -93,7 +92,7 @@ public class RagService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * RAG 问答 - 混合检索：关键词 + 向量，去重合并
+     * 问答接口 - 混合检索：关键词 + 向量，去重合并
      * @param question 问题
      * @param userId 用户ID，null 表示游客（不记录日志）
      */
@@ -123,7 +122,7 @@ public class RagService {
             result.put("logId", logId);
             return result;
         } catch (Exception e) {
-            throw new RuntimeException("RAG 问答失败: " + e.getMessage());
+            throw new RuntimeException("问答处理失败: " + e.getMessage());
         }
     }
 
@@ -137,7 +136,7 @@ public class RagService {
     }
 
     /**
-     * RAG 问答 - 流式响应 (SSE)
+     * 问答接口 - 流式响应 (SSE)
      * @param question 问题
      * @param emitter SSE 发射器
      * @param userId 用户ID，null 表示游客
@@ -177,7 +176,7 @@ public class RagService {
             try {
                 Map<String, Object> errorEvent = new HashMap<>();
                 errorEvent.put("type", "error");
-                errorEvent.put("data", "RAG 问答失败: " + e.getMessage());
+                errorEvent.put("data", "问答处理失败: " + e.getMessage());
                 emitter.send(SseEmitter.event().name("error").data(objectMapper.writeValueAsString(errorEvent)));
             } catch (IOException ignored) {}
             emitter.completeWithError(e);

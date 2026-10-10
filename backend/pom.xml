@@ -16,7 +16,7 @@
     <artifactId>my-rag-agent</artifactId>
     <version>1.0.0</version>
     <name>my-rag-agent</name>
-    <description>从零手写的 RAG Agent 项目</description>
+    <description>辅导员智能问答系统后端</description>
 
     <properties>
         <java.version>17</java.version>
