@@ -1,6 +1,30 @@
 # Git portable tools
 git-portable/
 portablegit.7z.exe
+git-installer.exe
+
+# Temporary files
+*.tar.gz
+git-status.txt
+connect_server.py
+
+# Diagnostic scripts
+deep_diagnose.sh
+deploy_mimo.sh
+diagnose_llm_issue.sh
+fix_llm_error.sh
+one_click_deploy.sh
+quick_check.sh
+test_llm_api.sh
+test_mimo_integration.sh
+
+# Documentation (temporary)
+LLM_API_问题排查指南.md
+MiMo接入部署指南.md
+完整解决方案.md
+立即修复.txt
+诊断结果与解决方案.md
+部署命令.txt
 
 # IDE
 .idea/
@@ -22,5 +46,5 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Large files (optional)
+# Large files
 *.pdf

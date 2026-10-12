@@ -302,7 +302,21 @@ public class RagService {
             }
             String body = response.body().string();
             JsonNode jsonNode = objectMapper.readTree(body);
-            return jsonNode.get("choices").get(0).get("message").get("content").asText();
+            JsonNode message = jsonNode.get("choices").get(0).get("message");
+
+            // MiMo 推理模型会返回 reasoning_content，优先使用 content
+            JsonNode contentNode = message.get("content");
+            if (contentNode != null && !contentNode.isNull() && !contentNode.asText().isEmpty()) {
+                return contentNode.asText();
+            }
+
+            // 如果 content 为空，尝试使用 reasoning_content
+            JsonNode reasoningNode = message.get("reasoning_content");
+            if (reasoningNode != null && !reasoningNode.isNull()) {
+                return reasoningNode.asText();
+            }
+
+            return "";
         }
     }
 
@@ -391,9 +405,10 @@ public class RagService {
                     JsonNode choices = jsonNode.get("choices");
                     if (choices != null && choices.size() > 0) {
                         JsonNode delta = choices.get(0).get("delta");
+
+                        // 处理 content 字段
                         if (delta != null && delta.has("content")) {
                             JsonNode contentNode = delta.get("content");
-                            // 过滤 null 值（JSON null / 字面量 "null"）和空字符串
                             if (contentNode != null && !contentNode.isNull()) {
                                 String content = contentNode.asText();
                                 if (content != null && !content.isEmpty() && !"null".equals(content)) {
@@ -402,6 +417,24 @@ public class RagService {
                                     chunkEvent.put("type", "chunk");
                                     chunkEvent.put("data", content);
                                     safeSend("chunk", chunkEvent);
+                                }
+                            }
+                        }
+
+                        // 处理 reasoning_content 字段（MiMo 推理模型）
+                        if (delta != null && delta.has("reasoning_content")) {
+                            JsonNode reasoningNode = delta.get("reasoning_content");
+                            if (reasoningNode != null && !reasoningNode.isNull()) {
+                                String reasoning = reasoningNode.asText();
+                                if (reasoning != null && !reasoning.isEmpty() && !"null".equals(reasoning)) {
+                                    // 如果 content 还没有内容，使用 reasoning_content
+                                    if (fullAnswer.length() == 0) {
+                                        fullAnswer.append(reasoning);
+                                        Map<String, Object> chunkEvent = new HashMap<>();
+                                        chunkEvent.put("type", "chunk");
+                                        chunkEvent.put("data", reasoning);
+                                        safeSend("chunk", chunkEvent);
+                                    }
                                 }
                             }
                         }
