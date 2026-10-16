@@ -48,3 +48,24 @@ Thumbs.db
 
 # Large files
 *.pdf
+
+# ===== 本地部署/诊断工具脚本（内含服务器凭据，严禁提交）=====
+# 项目源码只在 backend/ 与 frontend/ 内，根目录的脚本均为本地运维工具
+/*.js
+/*.py
+/*.ps1
+/*.bat
+/*.sh
+/*.html
+/package.json
+/package-lock.json
+/apache-maven-3.9.6/
+/maven.zip
+/.zcodeignore
+
+# 本地部署文档与报告（含密码/命令记录，严禁提交）
+/一键部署.txt
+/最终部署命令.txt
+/测试报告.md
+/验证部署.md
+/README_快速开始.md
